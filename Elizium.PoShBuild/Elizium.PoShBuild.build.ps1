@@ -1,4 +1,4 @@
-﻿# KRAYOLA
+﻿# VERSION 0.0.1 (PoShBuild)
 using namespace System.Text.RegularExpressions;
 
 task . Clean, Build, Tests, Stats
@@ -32,8 +32,8 @@ $script:Properties = [PSCustomObject]@{
   OutPsmPath          = "$($Core.ModuleOut).psm1";
   OutPsdPath          = "$($Core.ModuleOut).psd1";
   ModuleOutPath       = $(Join-Path -Path $PSScriptRoot -ChildPath "Output" -AdditionalChildPath $(
-    "$($script:ModuleName)"
-  ));
+      "$($script:ModuleName)"
+    ));
 
   FinalDirectory      = 'Final';
   PublicFolder        = 'Public';

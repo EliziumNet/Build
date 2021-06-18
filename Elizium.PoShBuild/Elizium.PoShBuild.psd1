@@ -30,10 +30,10 @@
   Copyright         = '(c) Plastikfan. All rights reserved.'
 
   # Description of the functionality provided by this module
-  # Description = ''
+  Description       = 'Shared Invoke-Build build tasks used by Elizium PowerShell modules'
 
   # Minimum version of the PowerShell engine required by this module
-  # PowerShellVersion = ''
+  PowerShellVersion = '7.0'
 
   # Name of the PowerShell host required by this module
   # PowerShellHostName = ''
@@ -69,7 +69,9 @@
   # NestedModules = @()
 
   # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
-  FunctionsToExport = @()
+  # THIS MUST BE single quotes NOT @(), otherwise, functions fail to export
+  #
+  FunctionsToExport = ''
 
   # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
   CmdletsToExport   = @()
@@ -78,7 +80,7 @@
   VariablesToExport = '*'
 
   # Aliases to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no aliases to export.
-  AliasesToExport   = @('PoShBuild.tasks')
+  AliasesToExport   = ''
 
   # DSC resources to export from this module
   # DscResourcesToExport = @()
