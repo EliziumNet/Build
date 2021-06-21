@@ -85,7 +85,7 @@ function Build-EzModule {
     else {
       Write-Host $(
         "Build script '$($builder.RepoScriptFileName)' " +
-        "[build: $($builderResult.Short)]" +
+        "[build: $($builderResult.Short)] " +
         "not present in repo, please run the import."
       );
     }
