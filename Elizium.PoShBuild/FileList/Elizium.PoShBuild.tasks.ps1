@@ -1,4 +1,4 @@
-# VERSION 0.0.1 (CLIENT)
+# VERSION 0.0.1
 using namespace System.Text.RegularExpressions;
 
 task . Clean, Build, Tests, Stats
