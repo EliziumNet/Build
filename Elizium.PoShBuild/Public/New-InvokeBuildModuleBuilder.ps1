@@ -4,8 +4,9 @@ function New-InvokeBuildModuleBuilder {
   param()
 
   [ProxyGit]$proxyGit = New-ProxyGit;
+  [string]$NullBuilderRootPath = $null;
   [InvokeBuildModuleBuilder]$builder = [InvokeBuildModuleBuilder]::new(
-    $proxyGit
+    $proxyGit, $NullBuilderRootPath
   );
   $builder.Init();
 

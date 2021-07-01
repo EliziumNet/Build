@@ -1,5 +1,7 @@
 
 class ModuleBuilder {
+  [string]$Parent;
+
   # REPO
   #
   [string]$RepoName;
@@ -8,11 +10,12 @@ class ModuleBuilder {
   [string]$RepoScriptFileName;
   [string]$ModuleRootPath;
   [string]$RepoBuildScriptFilePath;
+  [string]$OverridesFileName;
 
   # BUILDER (PoShBuild)
   #
-  [string]$BuilderRootPath = $PSScriptRoot;
-  [string]$BuilderScriptFileName = 'Elizium.PoShBuild.tasks.ps1';
+  [string]$BuilderRootPath;
+  [string]$BuilderScriptFileName = "Elizium.PoShBuild.tasks.ps1";
   [string]$BuilderScriptFilePath;
   [object]$Proxy;
 
@@ -32,16 +35,34 @@ class ModuleBuilder {
     return $(Get-Item -LiteralPath $scriptPath).LastWriteTime;
   }
 
-  ModuleBuilder([object]$proxy) {
+  ModuleBuilder([object]$proxy, [string]$builderRootPath) {
     $this.Proxy = $proxy;
+
+    $this.BuilderRootPath = [string]::IsNullOrEmpty($builderRootPath) `
+      ? $PSScriptRoot : $builderRootPath;
   }
 
   [void] Init() {
     [string]$repoRootPath = $this.Proxy.Root();
-
     $this.RepoName = Split-Path -Path $repoRootPath -Leaf;
-    $this.ModuleName = $('Elizium.' + $this.RepoName);
-    $this.RepoScriptName = $($this.ModuleName + '.build');
+    $this.OverridesFileName = "$($this.RepoName).overrides.json";
+
+    [string]$overridesFilePath = $(
+      Join-Path -Path $repoRootPath -ChildPath $this.OverridesFileName
+    );
+
+    [PSCustomObject]$overrides = if (Test-Path -LiteralPath $overridesFilePath -PathType Leaf) {
+      [string]$json = Get-Content -LiteralPath $overridesFilePath;
+      $json | ConvertFrom-Json -Depth 4;
+    }
+    else {
+      $null;
+    }
+
+    $this.Parent = ${overrides}?.Parent ?? 'Elizium';
+    $this.ModuleName = "$($this.Parent).$($this.RepoName)";
+
+    $this.RepoScriptName = ${overrides}?.RepoScriptName ?? $($this.ModuleName + '.build');
     $this.RepoScriptFileName = $($this.RepoScriptName + '.ps1');
     $this.ModuleRootPath = $(Join-Path -Path $repoRootPath -ChildPath $this.ModuleName);
     $this.RepoBuildScriptFilePath = $(
@@ -125,7 +146,7 @@ class ModuleBuilder {
 }
 
 class InvokeBuildModuleBuilder : ModuleBuilder {
-  InvokeBuildModuleBuilder([object]$proxy) : base($proxy) {
+  InvokeBuildModuleBuilder([object]$proxy, [string]$builderRootPath) : base($proxy, $builderRootPath) {
 
   }
 
