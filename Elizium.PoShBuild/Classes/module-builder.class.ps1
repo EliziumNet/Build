@@ -11,6 +11,8 @@ class ModuleBuilder {
   [string]$ModuleRootPath;
   [string]$RepoBuildScriptFilePath;
   [string]$OverridesFileName;
+  [string]$OverridesFilePath;
+  [PSCustomObject]$Overrides;
 
   # BUILDER (PoShBuild)
   #
@@ -35,6 +37,8 @@ class ModuleBuilder {
     return $(Get-Item -LiteralPath $scriptPath).LastWriteTime;
   }
 
+  hidden [int]$_depth = 4;
+
   ModuleBuilder([object]$proxy, [string]$builderRootPath) {
     $this.Proxy = $proxy;
 
@@ -47,22 +51,15 @@ class ModuleBuilder {
     $this.RepoName = Split-Path -Path $repoRootPath -Leaf;
     $this.OverridesFileName = "$($this.RepoName).overrides.json";
 
-    [string]$overridesFilePath = $(
+    $this.OverridesFilePath = $(
       Join-Path -Path $repoRootPath -ChildPath $this.OverridesFileName
     );
+    $this.Overrides = $this.ReadOverrides();
 
-    [PSCustomObject]$overrides = if (Test-Path -LiteralPath $overridesFilePath -PathType Leaf) {
-      [string]$json = Get-Content -LiteralPath $overridesFilePath;
-      $json | ConvertFrom-Json -Depth 4;
-    }
-    else {
-      $null;
-    }
-
-    $this.Parent = ${overrides}?.Parent ?? 'Elizium';
+    $this.Parent = ($this.Overrides)?.Parent ?? 'Elizium';
     $this.ModuleName = "$($this.Parent).$($this.RepoName)";
 
-    $this.RepoScriptName = ${overrides}?.RepoScriptName ?? $($this.ModuleName + '.build');
+    $this.RepoScriptName = ($this.Overrides)?.RepoScriptName ?? $($this.ModuleName + '.build');
     $this.RepoScriptFileName = $($this.RepoScriptName + '.ps1');
     $this.ModuleRootPath = $(Join-Path -Path $repoRootPath -ChildPath $this.ModuleName);
     $this.RepoBuildScriptFilePath = $(
@@ -73,8 +70,36 @@ class ModuleBuilder {
     );
   }
 
+  [PSCustomObject] ReadOverrides() {
+    [PSCustomObject]$result = if ($this.TestOverridesFileExists()) {
+      [string]$json = Get-Content -LiteralPath $this.OverridesFilePath;
+      $json | ConvertFrom-Json -Depth $this._depth;
+    }
+    else {
+      $null;
+    }
+    return $result;
+  }
+
+  [boolean] EjectOverrides() {
+    [string]$content = $([PSCustomObject]@{} | ConvertTo-Json -Depth $this._depth);
+
+    [boolean]$result = if (-not($this.TestOverridesFileExists())) {
+      Set-Content -LiteralPath $this.OverridesFilePath -Value $content;
+      $true;
+    }
+    else {
+      $false;
+    }
+    return $result;
+  }
+
   [boolean] TestBuildScriptExists() {
     return Test-Path -Path $this.RepoBuildScriptFilePath -PathType Leaf;
+  }
+
+  [boolean] TestOverridesFileExists() {
+    return Test-Path -Path $this.OverridesFilePath -PathType Leaf;
   }
 
   [void] ImportScript ([boolean]$force) {

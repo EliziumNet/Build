@@ -29,6 +29,19 @@ Describe 'ModuleBuilder' {
         [string]$scriptPath = $(Join-Path $DirectoryPath -ChildPath $ScriptFileName);
         Set-Content -LiteralPath $scriptPath -Value $Content;
       }
+
+      function script:Deploy-Overrides {
+        param(
+          [Parameter()]
+          [string]$Path,
+
+          [Parameter()]
+          [PSCustomObject]$Overrides
+        )
+
+        [string]$content = $Overrides | ConvertTo-Json -Depth 4;
+        Set-Content -LiteralPath $Path -Value $content;
+      }
     }
   }
 
@@ -271,6 +284,16 @@ Describe 'ModuleBuilder' {
         }
       }
     } # Query
+
+    Describe 'TestOverridesFileExists' {
+      Context 'given: Repo does NOT contain the overrides file' {
+        It 'should: return false' {
+          InModuleScope Elizium.PoShBuild {
+            $_builder.TestOverridesFileExists() | Should -BeFalse;
+          }
+        }
+      }
+    }
   } # Without Builder Overrides
 
   Context 'With Builder Overrides' {
@@ -303,6 +326,7 @@ Describe 'ModuleBuilder' {
         }
       }
     }
+
     Context 'InvokeBuildModuleBuilder.ctor' {
       Context 'given: overrides json file is present' {
         Context 'and: Parent is overridden' {
@@ -312,9 +336,7 @@ Describe 'ModuleBuilder' {
               [PSCustomObject]$builderOverrides = [PSCustomObject]@{
                 Parent = $parent;
               }
-              [string]$content = $builderOverrides | ConvertTo-Json -Depth 4;
-              Set-Content -LiteralPath $_overridesFilePath -Value $content;
-
+              Deploy-Overrides -Path $_overridesFilePath -Overrides $builderOverrides;
               $_builder.Init();
 
               # REPO
@@ -353,9 +375,7 @@ Describe 'ModuleBuilder' {
                 BuilderScriptFileName = $_builderScriptFileName;
                 RepoScriptName        = $repoScriptName;
               }
-              [string]$content = $builderOverrides | ConvertTo-Json -Depth 4;
-              Set-Content -LiteralPath $_overridesFilePath -Value $content;
-
+              Deploy-Overrides -Path $_overridesFilePath -Overrides $builderOverrides;
               $_builder.Init();
 
               # REPO
@@ -402,10 +422,7 @@ Describe 'ModuleBuilder' {
                 $Property = $Value;
               }
               [string]$parent = $($Property -eq 'Parent') ? $Value : $script:_defaultParent;
-              [string]$content = $builderOverrides | ConvertTo-Json -Depth 4;
-
-              Set-Content -LiteralPath $_overridesFilePath -Value $content;
-
+              Deploy-Overrides -Path $_overridesFilePath -Overrides $builderOverrides;
               $_builder.Init();
 
               # REPO
@@ -419,5 +436,22 @@ Describe 'ModuleBuilder' {
         } # given: <Property> is overridden
       } # given: overrides json file is present
     } # InvokeBuildModuleBuilder.ctor
+
+    Describe 'TestOverridesFileExists' {
+      Context 'given: Repo contains the overrides file' {
+        It 'should: return true' {
+          InModuleScope Elizium.PoShBuild {
+            [string]$parent = 'Lush';
+            [PSCustomObject]$builderOverrides = [PSCustomObject]@{
+              Parent = $parent;
+            }
+            Deploy-Overrides -Path $_overridesFilePath -Overrides $builderOverrides;
+            $_builder.Init();
+
+            $_builder.TestOverridesFileExists() | Should -BeTrue;
+          }
+        }
+      }
+    }
   } # With Builder Overrides
 }
