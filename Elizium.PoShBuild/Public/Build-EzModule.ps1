@@ -20,14 +20,18 @@ function Build-EzModule {
     Build script task(s) to invoke
 
   .PARAMETER Import
-    switch to indicate build script should be imported.
+    switch to indicate build script should be imported
 
   .PARAMETER Force
     switch to indicated force copying of build script (overwrite existing script)
 
   .PARAMETER Query
     switch to indicate running query of build script status
+
+  .PARAMETER Eject
+    switch to indicate dummy overrides file is to be created in the required location
   #>
+  [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '')]
   [CmdletBinding(DefaultParameterSetName = 'RunBuild')]
   [Alias('bumo')]
   param(
@@ -41,8 +45,19 @@ function Build-EzModule {
     [switch]$Force,
 
     [Parameter(ParameterSetName = 'QueryScriptStatus')]
-    [switch]$Query
+    [switch]$Query,
+
+    [Parameter(ParameterSetName = 'EjectOverrides')]
+    [switch]$Eject
   )
+  [hashtable]$colours = @{
+    'Ok'       = 'Green';
+    'Destruct' = 'Red';
+    'Error'    = 'DarkRed';
+    'Info'     = 'Cyan';
+    'Instruct' = 'Magenta';
+  }
+
   [InvokeBuildModuleBuilder]$builder = New-InvokeBuildModuleBuilder;
 
   if ($PSCmdlet.ParameterSetName -eq 'RunBuild') {
@@ -58,7 +73,7 @@ function Build-EzModule {
     if (-not(Test-Path -Path $builder.RepoBuildScriptFilePath)) {
       # Should never happen
       #
-      Write-Error "Failed to import build script: '$($builder.RepoBuildScriptFilePath)'"
+      Write-Error "Failed to import build script: '$($builder.RepoBuildScriptFilePath)'";
     }
   }
   elseif ($PSCmdlet.ParameterSetName -eq 'QueryScriptStatus') {
@@ -72,14 +87,14 @@ function Build-EzModule {
           "Build script '$($builder.RepoScriptFileName)' " +
           "[repo:$($clientResult.Short), build: $($builderResult.Short)]" +
           " IS present in repo and up to date."
-        );
+        ) -ForegroundColor $colours['Info'];
       }
       else {
         Write-Host $(
           "Build script '$($builder.RepoScriptFileName)' " +
           "[repo:$($clientResult.Short), build: $($builderResult.Short)]" +
           " IS present in repo, but stale, please run the import (with Force if necessary)."
-        );
+        ) -ForegroundColor $colours['Info'];
       }
     }
     else {
@@ -87,7 +102,29 @@ function Build-EzModule {
         "Build script '$($builder.RepoScriptFileName)' " +
         "[build: $($builderResult.Short)] " +
         "not present in repo, please run the import."
-      );
+      ) -ForegroundColor $colours['Instruct'];
+    }
+
+    if ($builder.TestBuildScriptExists() -and $builder.Overrides) {
+      Write-Host "Overrides present at: '$($builder.OverridesFilePath)'" -ForegroundColor $colours['Ok'];
+      [PSCustomObject]$overrides = $builder.Overrides;
+
+      [array]$items = $($overrides.psobject.Properties | ForEach-Object { "$($_.Name)=$($_.Value)" });
+      [string]$message = "Overridden items: '$($items -join ', ')'";
+      Write-Host $message -ForegroundColor $colours['Destruct'];
+    }
+    else {
+      Write-Host "No overrides present at: '$($builder.OverridesFilePath)'" -ForegroundColor $colours['Ok'];
+    }
+  }
+  elseif ($PSCmdlet.ParameterSetName -eq 'EjectOverrides') {
+    [boolean]$ejected = $builder.EjectOverrides();
+
+    if ($ejected) {
+      Write-Host "Ejected Overrides to: '$($builder.OverridesFilePath)'" -ForegroundColor  $colours['Ok'];
+    }
+    else {
+      Write-Host "Overrides already present at: '$($builder.OverridesFilePath)', skipped!" -ForegroundColor  $colours['Error'];
     }
   }
 }
