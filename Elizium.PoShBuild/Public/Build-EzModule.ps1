@@ -29,7 +29,7 @@ function Build-EzModule {
     switch to indicate running query of build script status
   #>
   [CmdletBinding(DefaultParameterSetName = 'RunBuild')]
-  [Alias('build-mod')]
+  [Alias('bumo')]
   param(
     [Parameter(ParameterSetName = 'RunBuild')]
     [string[]]$Task = @(),
