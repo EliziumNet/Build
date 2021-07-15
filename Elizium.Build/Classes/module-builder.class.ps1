@@ -14,10 +14,10 @@ class ModuleBuilder {
   [string]$OverridesFilePath;
   [PSCustomObject]$Overrides;
 
-  # BUILDER (PoShBuild)
+  # BUILDER (Build)
   #
   [string]$BuilderRootPath;
-  [string]$BuilderScriptFileName = "Elizium.PoShBuild.tasks.ps1";
+  [string]$BuilderScriptFileName = "Elizium.Build.tasks.ps1";
   [string]$BuilderScriptFilePath;
   [object]$Proxy;
 

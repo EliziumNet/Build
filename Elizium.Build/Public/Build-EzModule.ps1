@@ -10,11 +10,11 @@ function Build-EzModule {
   .DESCRIPTION
     This function relieves the stress and overhead of having the build script managed
   independently in client modules repo's. Instead, the client repo can import the build
-  script from here, PoShBuild meaning that any changes to the core build script are
+  script from here, Build meaning that any changes to the core build script are
   easily replicated to clients.
 
   .LINK
-    https://github.com/EliziumNet/PoShBuild
+    https://github.com/EliziumNet/Build
 
   .PARAMETER Task
     Build script task(s) to invoke

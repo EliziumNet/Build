@@ -2,14 +2,14 @@ using module Elizium.Klassy;
 
 Describe 'ModuleBuilder' {
   BeforeAll {
-    Get-Module Elizium.PoShBuild | Remove-Module -Force;
-    Import-Module .\Output\Elizium.PoShBuild\Elizium.PoShBuild.psm1 `
+    Get-Module Elizium.Build | Remove-Module -Force;
+    Import-Module .\Output\Elizium.Build\Elizium.Build.psm1 `
       -ErrorAction 'stop' -DisableNameChecking;
 
-    InModuleScope Elizium.PoShBuild {
+    InModuleScope Elizium.Build {
       [string]$script:_client = 'Willow';
       [string]$script:_overridesFileName = "$($_client).overrides.json";
-      [string]$script:_builderScriptName = 'Elizium.PoShBuild.tasks';
+      [string]$script:_builderScriptName = 'Elizium.Build.tasks';
       [string]$script:_builderScriptFileName = "$($_builderScriptName).ps1";
 
       function script:Deploy-DummyBuildScript {
@@ -47,7 +47,7 @@ Describe 'ModuleBuilder' {
 
   Context 'Without Builder Overrides' {
     BeforeEach {
-      InModuleScope Elizium.PoShBuild {
+      InModuleScope Elizium.Build {
         [string]$script:_repoRootPath = Join-Path -Path $TestDrive -ChildPath $_client;
         [string]$script:_builderRootPath = Join-Path -Path $TestDrive -ChildPath 'BuilderRoot';
 
@@ -78,7 +78,7 @@ Describe 'ModuleBuilder' {
 
     Context 'InvokeBuildModuleBuilder.ctor' {
       It 'should: set member properties correctly' {
-        InModuleScope Elizium.PoShBuild {
+        InModuleScope Elizium.Build {
           # REPO
           #
           $_builder.RepoName | Should -BeExactly $_client;
@@ -108,7 +108,7 @@ Describe 'ModuleBuilder' {
     Describe 'TestBuildScriptExists' {
       Context 'given: build script not present' {
         It 'should: return $false' {
-          InModuleScope Elizium.PoShBuild {
+          InModuleScope Elizium.Build {
             $_builder.TestBuildScriptExists() | Should -BeFalse;
           }
         }
@@ -116,7 +116,7 @@ Describe 'ModuleBuilder' {
 
       Context 'given: build script IS present' {
         It 'should: return $true' {
-          InModuleScope Elizium.PoShBuild {
+          InModuleScope Elizium.Build {
             Deploy-DummyBuildScript -DirectoryPath $_builder.ModuleRootPath `
               -ScriptFileName $_builder.RepoScriptFileName -Content 'DUMMY-CONTENT';
 
@@ -129,7 +129,7 @@ Describe 'ModuleBuilder' {
     Describe 'ImportScript' {
       Context 'given: Repo does NOT contain the build script' {
         It 'should: copy the build script into the repo' {
-          InModuleScope Elizium.PoShBuild {
+          InModuleScope Elizium.Build {
             Deploy-DummyBuildScript -DirectoryPath $_builder.BuilderRootPath `
               -ScriptFileName $_builder.BuilderScriptFileName -Content 'DUMMY-CONTENT';
 
@@ -141,7 +141,7 @@ Describe 'ModuleBuilder' {
 
       Context 'given: Repo contains up to date build script' {
         It 'should: NOT copy the build script into the repo' {
-          InModuleScope Elizium.PoShBuild {
+          InModuleScope Elizium.Build {
             Deploy-DummyBuildScript -DirectoryPath $_builder.ModuleRootPath `
               -ScriptFileName $_builder.RepoScriptFileName -Content 'CLIENT-REPO-CONTENT';
 
@@ -172,7 +172,7 @@ Describe 'ModuleBuilder' {
 
       Context 'given: Repo contains stale build script' {
         It 'should: NOT copy the build script into the repo' {
-          InModuleScope Elizium.PoShBuild {
+          InModuleScope Elizium.Build {
             Deploy-DummyBuildScript -DirectoryPath $_builder.ModuleRootPath `
               -ScriptFileName $_builder.RepoScriptFileName -Content 'STALE-CONTENT';
 
@@ -202,7 +202,7 @@ Describe 'ModuleBuilder' {
 
         Context 'and: force' {
           It 'should: copy the build script into the repo' {
-            InModuleScope Elizium.PoShBuild {
+            InModuleScope Elizium.Build {
               Deploy-DummyBuildScript -DirectoryPath $_builder.ModuleRootPath `
                 -ScriptFileName $_builder.RepoScriptFileName -Content 'FORKED-RECENT-CONTENT';
 
@@ -240,7 +240,7 @@ Describe 'ModuleBuilder' {
     Describe 'Query' {
       Context 'given: Repo does NOT contain the build script' {
         It 'should: resolve query' {
-          InModuleScope Elizium.PoShBuild {
+          InModuleScope Elizium.Build {
             Deploy-DummyBuildScript -DirectoryPath $_builder.BuilderRootPath `
               -ScriptFileName $_builder.BuilderScriptFileName -Content 'DUMMY-CONTENT';
 
@@ -252,7 +252,7 @@ Describe 'ModuleBuilder' {
 
       Context 'given: Repo contains up to date build script' {
         It 'should: resolve query' {
-          InModuleScope Elizium.PoShBuild {
+          InModuleScope Elizium.Build {
             Deploy-DummyBuildScript -DirectoryPath $_builder.ModuleRootPath `
               -ScriptFileName $_builder.RepoScriptFileName -Content 'DUMMY-CONTENT';
 
@@ -269,7 +269,7 @@ Describe 'ModuleBuilder' {
 
       Context 'given: Repo contains stale build script' {
         It 'should: resolve query' {
-          InModuleScope Elizium.PoShBuild {
+          InModuleScope Elizium.Build {
             Deploy-DummyBuildScript -DirectoryPath $_builder.ModuleRootPath `
               -ScriptFileName $_builder.RepoScriptFileName -Content 'STALE-CONTENT';
 
@@ -288,7 +288,7 @@ Describe 'ModuleBuilder' {
     Describe 'TestOverridesFileExists' {
       Context 'given: Repo does NOT contain the overrides file' {
         It 'should: return false' {
-          InModuleScope Elizium.PoShBuild {
+          InModuleScope Elizium.Build {
             $_builder.TestOverridesFileExists() | Should -BeFalse;
           }
         }
@@ -298,7 +298,7 @@ Describe 'ModuleBuilder' {
 
   Context 'With Builder Overrides' {
     BeforeEach {
-      InModuleScope Elizium.PoShBuild {
+      InModuleScope Elizium.Build {
         [string]$script:_defaultParent = 'Elizium';
         [string]$script:_builderRootPath = Join-Path -Path $TestDrive -ChildPath 'BuilderRoot';
         [string]$script:_repoRootPath = Join-Path -Path $TestDrive -ChildPath $_client;
@@ -331,7 +331,7 @@ Describe 'ModuleBuilder' {
       Context 'given: overrides json file is present' {
         Context 'and: Parent is overridden' {
           It 'should: apply Parent override' {
-            InModuleScope Elizium.PoShBuild {
+            InModuleScope Elizium.Build {
               [string]$parent = 'Lush';
               [PSCustomObject]$builderOverrides = [PSCustomObject]@{
                 Parent = $parent;
@@ -367,7 +367,7 @@ Describe 'ModuleBuilder' {
 
         Context 'and: Multiple values are overridden' {
           It 'should: apply overrides' {
-            InModuleScope Elizium.PoShBuild {
+            InModuleScope Elizium.Build {
               [string]$parent = 'Lush';
               [string]$repoScriptName = 'Willow.build-script';
               [PSCustomObject]$builderOverrides = [PSCustomObject]@{
@@ -413,7 +413,7 @@ Describe 'ModuleBuilder' {
             }
           ) {
             [hashtable]$parameters = @{ Property = $Property; Value = $Value; };
-            InModuleScope Elizium.PoShBuild -Parameters $parameters {
+            InModuleScope Elizium.Build -Parameters $parameters {
               param(
                 [string]$Property,
                 [string]$Value
@@ -440,7 +440,7 @@ Describe 'ModuleBuilder' {
     Describe 'TestOverridesFileExists' {
       Context 'given: Repo contains the overrides file' {
         It 'should: return true' {
-          InModuleScope Elizium.PoShBuild {
+          InModuleScope Elizium.Build {
             [string]$parent = 'Lush';
             [PSCustomObject]$builderOverrides = [PSCustomObject]@{
               Parent = $parent;
