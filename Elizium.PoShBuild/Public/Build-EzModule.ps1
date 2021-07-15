@@ -1,4 +1,4 @@
-
+﻿
 function Build-EzModule {
   <#
   .NAME
@@ -63,7 +63,7 @@ function Build-EzModule {
   if ($PSCmdlet.ParameterSetName -eq 'RunBuild') {
     $builder.Build($Task);
   }
-  elseif ($PSCmdlet.ParameterSetName -eq 'RunImport') {
+  elseif ($Import.IsPresent) {
     Write-Verbose $("Importing build script $($Force ? 'with force': [string]::Empty) ...");
     Write-Verbose $("===> from: '$($builder.BuilderScriptFilePath)'");
     Write-Verbose $("===>   to: '$($builder.RepoBuildScriptFilePath)'");
@@ -76,9 +76,9 @@ function Build-EzModule {
       Write-Error "Failed to import build script: '$($builder.RepoBuildScriptFilePath)'";
     }
   }
-  elseif ($PSCmdlet.ParameterSetName -eq 'QueryScriptStatus') {
+  elseif ($Query.IsPresent) {
     [PSCustomObject]$builderResult = $builder.Query('Builder');
-    
+
     if ($builder.TestBuildScriptExists()) {
       [PSCustomObject]$clientResult = $builder.Query('Client');
 
@@ -117,7 +117,7 @@ function Build-EzModule {
       Write-Host "No overrides present at: '$($builder.OverridesFilePath)'" -ForegroundColor $colours['Ok'];
     }
   }
-  elseif ($PSCmdlet.ParameterSetName -eq 'EjectOverrides') {
+  elseif ($Eject.IsPresent) {
     [boolean]$ejected = $builder.EjectOverrides();
 
     if ($ejected) {

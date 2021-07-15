@@ -1,6 +1,10 @@
 ﻿# VERSION 1.0.0
 using namespace System.Text.RegularExpressions;
 
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '')]
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidGlobalVars', '')]
+param()
+
 task . Clean, Build, Tests, Stats
 task Tests ImportCompiledModule, Pester
 task CreateManifest CopyPSD, UpdatePublicFunctionsToExport, CopyFileList
@@ -14,7 +18,7 @@ $script:ModuleName = Split-Path -Path $PSScriptRoot -Leaf;
 $script:Core = [PSCustomObject]@{
   ModuleName = $(Split-Path -Path $PSScriptRoot -Leaf);
 
-  # ModuleOut: this represents a module file in the output directory 
+  # ModuleOut: this represents a module file in the output directory
   #
   ModuleOut  = Join-Path -Path $PSScriptRoot -ChildPath "Output" -AdditionalChildPath $(
     "$($script:ModuleName)$([System.IO.Path]::DirectorySeparatorChar)$($script:ModuleName)"

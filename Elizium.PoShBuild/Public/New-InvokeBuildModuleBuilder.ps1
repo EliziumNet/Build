@@ -1,5 +1,6 @@
 
 function New-InvokeBuildModuleBuilder {
+  [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '')]
   [OutputType([InvokeBuildModuleBuilder])]
   param()
 
