@@ -1,4 +1,3 @@
-using module Elizium.Klassy;
 
 Describe 'ModuleBuilder' {
   BeforeAll {
@@ -56,7 +55,7 @@ Describe 'ModuleBuilder' {
             return $script:_repoRootPath;
           }
         }
-        [ProxyGit]$script:_proxyGit = New-ProxyGit -Overrides $_proxyOverrides;
+        [ProxyGit]$script:_proxyGit = build-ProxyGit -Overrides $_proxyOverrides;
         [ModuleBuilder]$script:_builder = [InvokeBuildModuleBuilder]::new(
           $_proxyGit, $_builderRootPath
         );
@@ -313,7 +312,7 @@ Describe 'ModuleBuilder' {
           }
         }
         [ModuleBuilder]$script:_builder = [InvokeBuildModuleBuilder]::new(
-          $(New-ProxyGit -Overrides $_proxyOverrides),
+          $(build-ProxyGit -Overrides $_proxyOverrides),
           $_builderRootPath
         );
 
