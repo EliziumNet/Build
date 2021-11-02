@@ -1,6 +1,42 @@
 
 # === [ ProxyGit ] ===========================================================
 #
+function readHeadDate {
+  [OutputType([string])]
+  param()
+  return $(git log -n 1 --format=%ai) ?? [string]::Empty;
+}
+
+function readLogTags {
+  [OutputType([array])]
+  param()
+  return $((git log --tags --simplify-by-decoration --pretty="format:%ci %d") -match 'tag:') ?? @();
+}
+
+function readLogRange {
+  [OutputType([array])]
+  param(
+    [Parameter()]
+    [string]$range,
+
+    [Parameter()]
+    [string]$format
+  )
+  return $((git log $range --format=$format) ?? @());
+}
+
+function readRemote {
+  [OutputType([string])]
+  param()
+  return $((git remote get-url origin) -replace '\.git$') ?? [string]::Empty;
+}
+
+function readRoot {
+  [OutputType([string])]
+  param()
+  return $(git rev-parse --show-toplevel) ?? [string]::Empty;
+}
+
 class ProxyGit {
   ProxyGit() {}
 
