@@ -4,7 +4,7 @@ function New-InvokeBuildModuleBuilder {
   [OutputType([InvokeBuildModuleBuilder])]
   param()
 
-  [ProxyGit]$proxyGit = New-ProxyGit;
+  [ProxyGit]$proxyGit = build-ProxyGit;
   [string]$NullBuilderRootPath = $null;
   [InvokeBuildModuleBuilder]$builder = [InvokeBuildModuleBuilder]::new(
     $proxyGit, $NullBuilderRootPath

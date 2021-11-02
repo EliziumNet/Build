@@ -1,4 +1,40 @@
 
+# === [ ProxyGit ] ===========================================================
+#
+class ProxyGit {
+  ProxyGit() {}
+
+  # All these are designed to be overridden by tests
+  #
+  [scriptblock]$ReadHeadDate = $function:readHeadDate;
+  [scriptblock]$ReadLogTags = $function:readLogTags;
+  [scriptblock]$ReadLogRange = $function:readLogRange;
+  [scriptblock]$ReadRemote = $function:readRemote;
+  [scriptblock]$ReadRoot = $function:readRoot;
+
+  [string] HeadDate() {
+    return $this.ReadHeadDate.InvokeReturnAsIs();
+  }
+
+  [array] LogTags() {
+    return $this.ReadLogTags.InvokeReturnAsIs();
+  }
+
+  [array] LogRange([string]$range, [string]$format) {
+    return $this.ReadLogRange.InvokeReturnAsIs($range, $format);
+  }
+
+  [string] Remote() {
+    return $this.ReadRemote.InvokeReturnAsIs();
+  }
+
+  [string] Root() {
+    return $this.ReadRoot.InvokeReturnAsIs();
+  }
+}
+
+# === [ ModuleBuilder ] ======================================================
+#
 class ModuleBuilder {
   [string]$Parent;
 

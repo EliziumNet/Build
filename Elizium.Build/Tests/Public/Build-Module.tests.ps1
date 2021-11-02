@@ -1,4 +1,3 @@
-using module Elizium.Klassy;
 
 Describe 'Build-Module' {
   BeforeAll {
