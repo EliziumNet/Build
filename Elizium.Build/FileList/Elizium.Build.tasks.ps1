@@ -132,6 +132,23 @@ function Get-PublicFunctionAliasesToExport {
   $aliases;
 }
 
+function Test-DoesFileNameMatchFunctionName {
+  [OutputType([boolean])]
+  param(
+    [Parameter()]
+    [string]$Name,
+
+    [Parameter()]
+    [string]$Content
+  )
+  [System.Text.RegularExpressions.RegexOptions]$options = "IgnoreCase";
+  [string]$escaped = [regex]::Escape($Name);
+  [regex]$rexo = New-Object -TypeName System.Text.RegularExpressions.RegEx -ArgumentList (
+    @("function\s+$($escaped)", $options));
+
+  return $rexo.IsMatch($Content);
+}
+
 task Clean {
   if (-not(Test-Path $script:Properties.OutputFolder)) {
     New-Item -ItemType Directory -Path $script:Properties.OutputFolder > $null
@@ -189,7 +206,15 @@ task Compile @compileParams {
       $files = Get-ChildItem -Path $currentFolder -File -Recurse -Filter '*.ps1'
       foreach ($file in $files) {
         Write-Verbose -Message "Adding $($file.FullName)"
+        [string]$content = Get-Content -Path (Resolve-Path $file.FullName)
         Get-Content -Path (Resolve-Path $file.FullName) >> $script:Properties.OutPsmPath
+
+        if ($file.Name -notMatch ".class.ps1$") {
+          if (-not(Test-DoesFileNameMatchFunctionName -Name $File.BaseName -Content $content)) {
+            Write-Host "*** Beware, file: '$($file.Name)' does not contain matching function definition" `
+              -ForegroundColor Red;
+          }
+        }
       }
     }
   }
