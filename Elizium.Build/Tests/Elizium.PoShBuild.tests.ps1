@@ -1,9 +1,14 @@
-﻿$moduleRoot = Resolve-Path "$PSScriptRoot/.."
+﻿using namespace System.IO;
+
+$moduleRoot = Resolve-Path "$PSScriptRoot/.."
 $moduleName = Split-Path $moduleRoot -Leaf
 
 Describe "General project validation: $moduleName" {
 
-  $scripts = Get-ChildItem $moduleRoot -Include *.ps1, *.psm1, *.psd1 -Recurse
+  $scripts = Get-ChildItem $moduleRoot -Include *.ps1, *.psm1, *.psd1 -Recurse;
+  $scripts = $scripts | Where-Object {
+    $_.FullName -notMatch $([regex]::Escape([Path]::Join("Tests", "Data", "Modules", "With")))
+  }
 
   # TestCases are splatted to the script so we need hashtables
   $testCase = $scripts | Foreach-Object { @{file = $_ } }

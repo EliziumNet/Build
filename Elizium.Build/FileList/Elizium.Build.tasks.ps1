@@ -182,6 +182,70 @@ function Test-ShouldFileNameBeChecked {
   return $result;
 }
 
+function Repair-Using {
+  [OutputType([PSCustomObject])]
+  param(
+    [Parameter(Mandatory)]
+    [PSCustomObject]$ParseInfo
+  )
+  [System.Text.RegularExpressions.MatchCollection]$mc = $ParseInfo.Rexo.Matches(
+    $ParseInfo.Content
+  );
+
+  $withoutUsingStatements = $ParseInfo.Rexo.Replace($ParseInfo.Content, [string]::Empty);
+
+  [System.Text.StringBuilder]$builder = [System.Text.StringBuilder]::new();
+
+  [string[]]$statements = $(foreach ($m in $mc) {
+      [System.Text.RegularExpressions.GroupCollection]$groups = $m.Groups;
+      [string]$syntax = $groups["syntax"];
+      [string]$name = $groups["name"];
+
+      "using $syntax $name;";
+    }) | Select-Object -unique;
+
+  $statements | ForEach-Object {
+    $builder.AppendLine($_);
+  }
+  $builder.Append($withoutUsingStatements);
+
+  return [PSCustomObject]@{
+    Content = $builder.ToString();
+  }
+}
+
+function Get-UsingParseInfo {
+  [OutputType([PSCustomObject])]
+  param(
+    [Parameter(Mandatory, ValueFromPipeline, Position = 0)]
+    [string]$Path,
+
+    [Parameter()]
+    [string]$Pattern = $("\s*using (?<syntax>namespace|module)\s+(?<name>[\w\.]+);?"),
+
+    [Parameter()]
+    [switch]$WithContent
+  )
+  [regex]$rexo = [regex]::new($Pattern, "IgnoreCase, MultiLine");
+  [array]$records = Invoke-ScriptAnalyzer -Path $Path | Where-Object {
+    $_.RuleName -eq "UsingMustBeAtStartOfScript"
+  };
+
+  [PSCustomObject]$result = [PSCustomObject]@{
+    Records = $records;
+    IsOk    = $records.Count -eq 0;
+    Rexo    = $rexo;
+  }
+
+  if ($WithContent.IsPresent) {
+    $result | Add-Member -MemberType NoteProperty -Name "Content" -Value $(
+      Get-Content -LiteralPath $Path -Raw;
+    )
+  }
+
+  return $result;
+}
+
 task Clean {
   if (-not(Test-Path $script:Properties.OutputFolder)) {
     New-Item -ItemType Directory -Path $script:Properties.OutputFolder > $null
@@ -314,6 +378,15 @@ task Compile @compileParams {
       $moduleInitContent = Get-Content -LiteralPath $moduleInitPath;
       $moduleInitContent >> $script:Properties.OutPsmPath;
     }
+  }
+
+  # Finally resolve using statements
+  #
+  [PSCustomObject]$usingInfo = Get-UsingParseInfo -Path $script:Properties.OutPsmPath -WithContent;
+  
+  if (-not($usingInfo.IsOk)) {
+    Write-Host "Repairing using statements";
+    $null = Repair-Using -ParseInfo $usingInfo;
   }
 }
 
