@@ -5,16 +5,6 @@ using namespace System.Text.RegularExpressions;
 [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidGlobalVars', '')]
 param()
 
-task . Clean, Build, Tests, Stats
-task Tests ImportCompiledModule, Pester
-task CreateManifest CopyPSD, UpdatePublicFunctionsToExport, CopyFileList
-task Build Compile, CreateManifest, Repair
-task Stats RemoveStats, WriteStats
-task Ana Analyse
-task Fix ApplyFix
-task Repair RepairUsingStatements
-task BuildHelp Docs
-
 $script:ModuleName = Split-Path -Path $PSScriptRoot -Leaf;
 $script:Core = [PSCustomObject]@{
   ModuleName = $(Split-Path -Path $PSScriptRoot -Leaf);
@@ -69,6 +59,18 @@ if (Test-Path -Path $script:Properties.TestHelpers) {
 if (Test-Path -Path $script:Properties.AdditionExportsPath) {
   . $script:Properties.AdditionExportsPath;
 }
+
+# Task Definitions
+#
+task . Clean, Build, Tests, Stats
+task Tests ImportCompiledModule, Pester
+task CreateManifest CopyPSD, UpdatePublicFunctionsToExport, CopyFileList
+task Build Compile, CreateManifest, Repair
+task Stats RemoveStats, WriteStats
+task Ana Analyse
+task Fix ApplyFix
+task Repair RepairUsingStatements
+task BuildHelp Docs
 
 function Get-AdditionalFnExports {
   [string []]$additional = @()
