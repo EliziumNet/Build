@@ -29,6 +29,12 @@ Describe 'Repair-Using' {
         }
 
         , @{
+          Skip       = "Quoted Syntax NOT currently working";
+          PsModule   = "WithSingleInvalidSingleQuotedModStmt";
+          Namespaces = @("System.IO");
+        }
+
+        , @{
           PsModule = "WithSingleInvalidModStmt";
           Modules  = @("Elizium.Loopz");
         }
@@ -122,6 +128,9 @@ Describe 'Repair-Using' {
 
           Set-Content -LiteralPath $repairedPath -Value $repaired.Content;
           [PSCustomObject]$parsedRepaired = Get-UsingParseInfo -Path $repairedPath -WithContent;
+
+          Write-Debug "---> REPAIRED-CONTENT:";
+          Write-Debug "$($parsedRepaired.Content)";
 
           [PSCustomObject]$expected = [PSCustomObject]@{
             Namespaces = $Namespaces;

@@ -13,6 +13,8 @@ function Repair-Using {
 
   [System.Text.StringBuilder]$builder = [System.Text.StringBuilder]::new();
 
+  Write-Debug "Repair-Using found '$($mc.Count)' using statements";
+
   [string[]]$statements = $(foreach ($m in $mc) {
       [System.Text.RegularExpressions.GroupCollection]$groups = $m.Groups;
       [string]$syntax = $groups["syntax"];
@@ -22,6 +24,8 @@ function Repair-Using {
     }) | Select-Object -unique;
 
   $statements | ForEach-Object {
+    Debug "===> appending: '$_'";
+
     $builder.AppendLine($_);
   }
   $builder.AppendLine([string]::Empty);

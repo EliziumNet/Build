@@ -6,7 +6,9 @@ function Get-UsingParseInfo {
     [string]$Path,
 
     [Parameter()]
-    [string]$Pattern = $("\s*using (?<syntax>namespace|module)\s+(?<name>[\w\.]+);?"),
+    [string]$Pattern = $(
+      "\s*using (?<syntax>namespace|module)\s+(?<name>(?:[\w\.]+)|(?:(?<quote>[\'])[\w\.\s]+\k<quote>));?"
+    ),
 
     [Parameter()]
     [switch]$WithContent
