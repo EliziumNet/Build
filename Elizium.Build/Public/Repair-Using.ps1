@@ -24,6 +24,7 @@ function Repair-Using {
   $statements | ForEach-Object {
     $builder.AppendLine($_);
   }
+  $builder.AppendLine([string]::Empty);
   $builder.Append($withoutUsingStatements);
 
   return [PSCustomObject]@{
