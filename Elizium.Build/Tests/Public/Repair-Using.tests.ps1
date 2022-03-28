@@ -11,7 +11,9 @@ using namespace System.IO;
 # the clients' build tasks file. The cloning is the lesser of 2 evils.
 #
 
-Describe 'Repair-Using' {
+Describe 'Repair-Using' -Skip {
+
+  # Needs to be converted to use the engine's version of Repair-Using
   BeforeAll {
     Get-Module Elizium.Build | Remove-Module -Force;
     Import-Module .\Output\Elizium.Build\Elizium.Build.psm1 `
@@ -64,7 +66,6 @@ Describe 'Repair-Using' {
           PsModule = "WithCommentedOutUsingStmt";
         }
       ) {
-
         function assert-using {
           [CmdletBinding()]
           param(
