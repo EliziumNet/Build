@@ -19,7 +19,7 @@ Describe 'BuildEngine' {
 
   Context "given: client side config object" {
     InModuleScope Elizium.Build {
-      It "should: initialise <Item> to <Expected>, because <Reason>" -Tag "Current" -TestCases @(
+      It "should: initialise <Item> to <Expected>, because <Reason>" -TestCases @(
         # Module
         #
         @{

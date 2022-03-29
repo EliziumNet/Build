@@ -82,7 +82,9 @@ function Build-EzModule {
     if ($builder.TestBuildScriptExists()) {
       [PSCustomObject]$clientResult = $builder.Query('Client');
 
-      if ($builderResult.Date.Ticks -ge $clientResult.Date.Ticks) {
+      if ($($builderResult.Date.Ticks -ge $clientResult.Date.Ticks) -and
+        $($builderResult.Hash -eq $clientResult.Hash)
+      ) {
         Write-Host $(
           "Build script '$($builder.RepoScriptFileName)' " +
           "[repo:$($clientResult.Short), build: $($builderResult.Short)]" +
