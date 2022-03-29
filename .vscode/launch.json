@@ -9,6 +9,23 @@
       "type": "PowerShell",
       "request": "launch",
       "cwd": ""
-    }
+    },
+
+    {
+      "type": "PowerShell",
+      "request": "launch",
+      "name": "Invoke-Build Default Task",
+      "script": "Invoke-Build",
+      "args": [".", "${file}"],
+      "cwd": "${workspaceRoot}"
+  },
+  {
+      "type": "PowerShell",
+      "request": "launch",
+      "name": "Invoke-Build Current Task",
+      "script": "Invoke-TaskFromVSCode",
+      "args": [],
+      "cwd": "${workspaceRoot}"
+  },
   ]
 }

@@ -1,11 +1,5 @@
-﻿# VERSION 1.0.0
-using namespace System.Text.RegularExpressions;
-using namespace System.Text;
-using namespace System.IO;
 
-[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '')]
-[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidGlobalVars', '')]
-param()
+using namespace System.IO;
 
 class BuildEngine {
 
@@ -31,7 +25,6 @@ class BuildEngine {
         Public   = "Public";
         Output   = "Output";
         Language = "en-GB";
-        Docs     = "docs";
         Tests    = "Tests";
       }
     
@@ -51,7 +44,6 @@ class BuildEngine {
         ModuleOut                  = [string]::Empty;
         Public                     = [string]::Empty;
         Root                       = [string]::Empty;
-        Docs                       = [string]::Empty;
         Tests                      = [string]::Empty;
         TestHelpers                = [string]::Empty;
       }
@@ -131,11 +123,6 @@ class BuildEngine {
         $this.Data.Directory.Root,
         $this.Data.Label.Tests,
         $this.Data.Label.Helpers
-      ));
-
-    $this.Data.Directory.Docs = $([Path]::Join(
-        $this.Data.Directory.Root,
-        $this.Data.Label.Docs
       ));
 
     $this.Data.Directory.Tests = $([Path]::Join(
@@ -250,9 +237,9 @@ class BuildEngine {
 
   [string[]] GetPublicFunctionAliasesToExport() {
     [string]$expression = 'Alias\((?<aliases>((?<quote>[''"])[\w-]+\k<quote>\s*,?\s*)+)\)';
-    [RegexOptions]$options = 'IgnoreCase, SingleLine';
+    [System.Text.RegularExpressions.RegexOptions]$options = 'IgnoreCase, SingleLine';
     
-    [regex]$aliasesRegEx = [regex]::new(
+    [System.Text.RegularExpressions.RegEx]$aliasesRegEx = [regex]::new(
       $expression, $options
     );
   
@@ -261,7 +248,7 @@ class BuildEngine {
     Get-ChildItem -Path $this.Data.Directory.Public -Recurse -File -Filter '*.ps1' | Foreach-Object {
       [string]$content = Get-Content $_;
   
-      [Match]$contentMatch = $aliasesRegEx.Match($content);
+      [System.Text.RegularExpressions.Match]$contentMatch = $aliasesRegEx.Match($content);
   
       if ($contentMatch.Success) {
         $al = $contentMatch.Groups['aliases'];
@@ -276,7 +263,7 @@ class BuildEngine {
   }
 
   [boolean] DoesFileNameMatchFunctionName([string]$Name, [string]$Content) {
-    [RegexOptions]$options = "IgnoreCase";
+    [System.Text.RegularExpressions.RegexOptions]$options = "IgnoreCase";
     [string]$escaped = [regex]::Escape($Name);
     [regex]$rexo = [regex]::new("function\s+$($escaped)", $options);
   
@@ -322,16 +309,16 @@ class BuildEngine {
   }
 
   [PSCustomObject] RepairUsing([PSCustomObject]$ParseInfo) {
-    [MatchCollection]$mc = $ParseInfo.Rexo.Matches(
+    [System.Text.RegularExpressions.MatchCollection]$mc = $ParseInfo.Rexo.Matches(
       $ParseInfo.Content
     );
   
     $withoutUsingStatements = $ParseInfo.Rexo.Replace($ParseInfo.Content, [string]::Empty);
   
-    [StringBuilder]$builder = [StringBuilder]::new();
+    [System.Text.StringBuilder]$builder = [System.Text.StringBuilder]::new();
   
     [string[]]$statements = $(foreach ($m in $mc) {
-        [GroupCollection]$groups = $m.Groups;
+        [System.Text.RegularExpressions.GroupCollection]$groups = $m.Groups;
         [string]$syntax = $groups["syntax"];
         [string]$name = $groups["name"];
   
@@ -529,7 +516,7 @@ class BuildEngine {
   } # ImportCompiledModuleTask
 
   [void] PesterTask() {
-    $resultFile = "{0}$($([Path]::DirectorySeparatorChar))testResults{1}.xml" `
+    $resultFile = "{0}$($([System.IO.Path]::DirectorySeparatorChar))testResults{1}.xml" `
       -f $this.Data.Directory.Output, (Get-date -Format 'yyyyMMdd_hhmmss')
 
     $configuration = [PesterConfiguration]::Default
@@ -585,103 +572,8 @@ class BuildEngine {
   } # RepairUsingStatementsTask
 
   [void] DocsTask() {
-    if (Test-Path -LiteralPath $this.Data.Directory.Docs) {
-      Write-Host "Writing to: '$($this.Data.Directory.ExternalHelp)'";
-      $null = New-ExternalHelp $this.Data.Directory.Docs `
-        -OutputPath "$($this.Data.Directory.ExternalHelp)"
-    }
-    else {
-      Write-Warning "No docs to build from path: '$($this.Data.Directory.Docs)'"
-    }
+    Write-Host "Writing to: '$($this.Data.Directory.ExternalHelp)'"
+    $null = New-ExternalHelp $(Join-Path -Path $this.Data.Directory.Root -ChildPath 'docs') `
+      -OutputPath "$($this.Data.Directory.ExternalHelp)"    
   }
 } # BuildEngine
-
-Enter-build {
-  Write-Build Green "entering build ... Build-Root: '$($BuildRoot)'";
-
-  [BuildEngine]$script:_Engine = [BuildEngine]::new([PSCustomObject]@{
-      Directory = [PSCustomObject]@{
-        Root = $PSScriptRoot;
-      }
-    });
-
-  # $script:_Engine.Initialise();
-
-  if (Test-Path -Path "Tests\Helpers") {
-    $helpers = Get-ChildItem -Path "Tests\Helpers" -Recurse -File -Filter '*.ps1';
-    $helpers | ForEach-Object { Write-Verbose "sourcing helper $_"; . $_; }
-  }
-
-  if (Test-Path -Path "Init\additional-exports.ps1") {
-    . Init\additional-exports.ps1;
-  }
-}
-
-# Task Definitions
-#
-task . Clean, Build, Tests, Stats
-task Tests ImportCompiledModule, Pester
-task CreateManifest CopyPSD, UpdatePublicFunctionsToExport, CopyFileList
-task Build Compile, CreateManifest, Repair
-task Stats RemoveStats, WriteStats
-task Ana Analyse
-task Fix ApplyFix
-task Repair RepairUsingStatements
-task BuildHelp Docs
-
-task Clean {
-  $script:_Engine.CleanTask();
-}
-
-task Compile {
-  $script:_Engine.CompileTask();
-}
-
-task CopyPSD {
-  $script:_Engine.CopyPSDTask();
-}
-
-task UpdatePublicFunctionsToExport {
-  $script:_Engine.UpdatePublicFunctionsToExportTask();
-}
-
-task CopyFileList {
-  $script:_Engine.CopyFileListTask();
-}
-
-task ImportCompiledModule {
-  $script:_Engine.ImportCompiledModuleTask();
-}
-
-task Pester {
-  $script:_Engine.PesterTask();
-}
-
-task RemoveStats {
-  # Remove-Item -Force -Verbose -Path (Resolve-Path "$($script:Properties.StatsFile)")
-}
-
-task WriteStats {
-  $script:_Engine.WriteStatsTask();
-}
-
-task Analyse {
-  $script:_Engine.AnalyseTask();
-}
-
-task ApplyFix {
-  $script:_Engine.ApplyFixTask();
-}
-
-task RepairUsingStatements {
-  $script:_Engine.RepairUsingStatementsTask();
-}
-# Before this can be run, this must be run first
-# New-MarkdownHelp -Module <Module> -OutputFolder .\docs
-# (run from the module root, not the repo root)
-# Then update the {{ ... }} place holders in the md files.
-# the docs task generates the external help from the md files
-#
-task Docs {
-  $script:_Engine.DocsTask();
-}
