@@ -304,20 +304,37 @@ class BuildEngine {
   }
 
   [PSCustomObject] GetUsingParseInfo([string]$Path) {
-    [array]$records = Invoke-ScriptAnalyzer -Path $Path | Where-Object {
-      $_.RuleName -eq "UsingMustBeAtStartOfScript"
-    };
-  
-    [PSCustomObject]$result = [PSCustomObject]@{
-      Records = $records;
-      IsOk    = $records.Count -eq 0;
-      Rexo    = $this.Data.Rexo.RepairUsing;
+    [array]$records = @();
+    [PSCustomObject]$result = [PSCustomObject]@{};
+
+    try {
+      $records = $(Invoke-ScriptAnalyzer -Path $Path | Where-Object {
+          $_.RuleName -eq "UsingMustBeAtStartOfScript"
+        });
+
+      $result = [PSCustomObject]@{
+        Records = $records;
+        IsOk    = $records.Count -eq 0;
+        Rexo    = $this.Data.Rexo.RepairUsing;
+      }
+    
+      $result | Add-Member -MemberType NoteProperty -Name "Content" -Value $(
+        Get-Content -LiteralPath $Path -Raw;
+      )
+    }
+    catch {
+      Write-Host "---> ♨️ path: '$($Path)'";
+      Write-Host "---> STACK TRACE:";
+      Write-Host $_.ScriptStackTrace;
+
+      Write-Host "---> MESSAGE:";
+      Write-Host "$($_.Exception.Message)";
+
+     
+      Write-Error $("🔥 Null object reference error on Script Analyzer is known issue," +
+        " please just re-run the command.");
     }
   
-    $result | Add-Member -MemberType NoteProperty -Name "Content" -Value $(
-      Get-Content -LiteralPath $Path -Raw;
-    )
-
     return $result;
   }
 

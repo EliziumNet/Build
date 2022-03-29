@@ -1,4 +1,6 @@
 
+using namespace System.Text.RegularExpressions;
+using namespace System.Text;
 using namespace System.IO;
 
 class BuildEngine {
@@ -25,6 +27,7 @@ class BuildEngine {
         Public   = "Public";
         Output   = "Output";
         Language = "en-GB";
+        Docs     = "docs";
         Tests    = "Tests";
       }
     
@@ -44,6 +47,7 @@ class BuildEngine {
         ModuleOut                  = [string]::Empty;
         Public                     = [string]::Empty;
         Root                       = [string]::Empty;
+        Docs                       = [string]::Empty;
         Tests                      = [string]::Empty;
         TestHelpers                = [string]::Empty;
       }
@@ -123,6 +127,11 @@ class BuildEngine {
         $this.Data.Directory.Root,
         $this.Data.Label.Tests,
         $this.Data.Label.Helpers
+      ));
+
+    $this.Data.Directory.Docs = $([Path]::Join(
+        $this.Data.Directory.Root,
+        $this.Data.Label.Docs
       ));
 
     $this.Data.Directory.Tests = $([Path]::Join(
@@ -237,9 +246,9 @@ class BuildEngine {
 
   [string[]] GetPublicFunctionAliasesToExport() {
     [string]$expression = 'Alias\((?<aliases>((?<quote>[''"])[\w-]+\k<quote>\s*,?\s*)+)\)';
-    [System.Text.RegularExpressions.RegexOptions]$options = 'IgnoreCase, SingleLine';
+    [RegexOptions]$options = 'IgnoreCase, SingleLine';
     
-    [System.Text.RegularExpressions.RegEx]$aliasesRegEx = [regex]::new(
+    [regex]$aliasesRegEx = [regex]::new(
       $expression, $options
     );
   
@@ -248,7 +257,7 @@ class BuildEngine {
     Get-ChildItem -Path $this.Data.Directory.Public -Recurse -File -Filter '*.ps1' | Foreach-Object {
       [string]$content = Get-Content $_;
   
-      [System.Text.RegularExpressions.Match]$contentMatch = $aliasesRegEx.Match($content);
+      [Match]$contentMatch = $aliasesRegEx.Match($content);
   
       if ($contentMatch.Success) {
         $al = $contentMatch.Groups['aliases'];
@@ -263,7 +272,7 @@ class BuildEngine {
   }
 
   [boolean] DoesFileNameMatchFunctionName([string]$Name, [string]$Content) {
-    [System.Text.RegularExpressions.RegexOptions]$options = "IgnoreCase";
+    [RegexOptions]$options = "IgnoreCase";
     [string]$escaped = [regex]::Escape($Name);
     [regex]$rexo = [regex]::new("function\s+$($escaped)", $options);
   
@@ -291,34 +300,51 @@ class BuildEngine {
   }
 
   [PSCustomObject] GetUsingParseInfo([string]$Path) {
-    [array]$records = Invoke-ScriptAnalyzer -Path $Path | Where-Object {
-      $_.RuleName -eq "UsingMustBeAtStartOfScript"
-    };
-  
-    [PSCustomObject]$result = [PSCustomObject]@{
-      Records = $records;
-      IsOk    = $records.Count -eq 0;
-      Rexo    = $this.Data.Rexo.RepairUsing;
+    [array]$records = @();
+    [PSCustomObject]$result = [PSCustomObject]@{};
+
+    try {
+      $records = $(Invoke-ScriptAnalyzer -Path $Path | Where-Object {
+          $_.RuleName -eq "UsingMustBeAtStartOfScript"
+        });
+
+      $result = [PSCustomObject]@{
+        Records = $records;
+        IsOk    = $records.Count -eq 0;
+        Rexo    = $this.Data.Rexo.RepairUsing;
+      }
+    
+      $result | Add-Member -MemberType NoteProperty -Name "Content" -Value $(
+        Get-Content -LiteralPath $Path -Raw;
+      )
+    }
+    catch {
+      Write-Host "---> ♨️ path: '$($Path)'";
+      Write-Host "---> STACK TRACE:";
+      Write-Host $_.ScriptStackTrace;
+
+      Write-Host "---> MESSAGE:";
+      Write-Host "$($_.Exception.Message)";
+
+     
+      Write-Error $("🔥 Null object reference error on Script Analyzer is known issue," +
+        " please just re-run the command.");
     }
   
-    $result | Add-Member -MemberType NoteProperty -Name "Content" -Value $(
-      Get-Content -LiteralPath $Path -Raw;
-    )
-
     return $result;
   }
 
   [PSCustomObject] RepairUsing([PSCustomObject]$ParseInfo) {
-    [System.Text.RegularExpressions.MatchCollection]$mc = $ParseInfo.Rexo.Matches(
+    [MatchCollection]$mc = $ParseInfo.Rexo.Matches(
       $ParseInfo.Content
     );
   
     $withoutUsingStatements = $ParseInfo.Rexo.Replace($ParseInfo.Content, [string]::Empty);
   
-    [System.Text.StringBuilder]$builder = [System.Text.StringBuilder]::new();
+    [StringBuilder]$builder = [StringBuilder]::new();
   
     [string[]]$statements = $(foreach ($m in $mc) {
-        [System.Text.RegularExpressions.GroupCollection]$groups = $m.Groups;
+        [GroupCollection]$groups = $m.Groups;
         [string]$syntax = $groups["syntax"];
         [string]$name = $groups["name"];
   
@@ -516,7 +542,7 @@ class BuildEngine {
   } # ImportCompiledModuleTask
 
   [void] PesterTask() {
-    $resultFile = "{0}$($([System.IO.Path]::DirectorySeparatorChar))testResults{1}.xml" `
+    $resultFile = "{0}$($([Path]::DirectorySeparatorChar))testResults{1}.xml" `
       -f $this.Data.Directory.Output, (Get-date -Format 'yyyyMMdd_hhmmss')
 
     $configuration = [PesterConfiguration]::Default
@@ -572,8 +598,13 @@ class BuildEngine {
   } # RepairUsingStatementsTask
 
   [void] DocsTask() {
-    Write-Host "Writing to: '$($this.Data.Directory.ExternalHelp)'"
-    $null = New-ExternalHelp $(Join-Path -Path $this.Data.Directory.Root -ChildPath 'docs') `
-      -OutputPath "$($this.Data.Directory.ExternalHelp)"    
+    if (Test-Path -LiteralPath $this.Data.Directory.Docs) {
+      Write-Host "Writing to: '$($this.Data.Directory.ExternalHelp)'";
+      $null = New-ExternalHelp $this.Data.Directory.Docs `
+        -OutputPath "$($this.Data.Directory.ExternalHelp)"
+    }
+    else {
+      Write-Warning "No docs to build from path: '$($this.Data.Directory.Docs)'"
+    }
   }
 } # BuildEngine
